@@ -1,0 +1,10 @@
+{
+  "alwaysUpdateLinks": true,
+  "attachmentFolderPath": "Bin",
+  "newFileLocation": "folder",
+  "newFileFolderPath": "Study Notes",
+  "showInlineTitle": true,
+  "spellcheck": true,
+  "strictLineBreaks": true,
+  "useMarkdownLinks": false
+}

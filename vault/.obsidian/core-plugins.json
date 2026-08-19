@@ -1,0 +1,20 @@
+{
+  "backlink": true,
+  "bases": true,
+  "canvas": true,
+  "command-palette": true,
+  "file-explorer": true,
+  "file-recovery": true,
+  "footnotes": true,
+  "global-search": true,
+  "outgoing-link": true,
+  "outline": true,
+  "page-preview": true,
+  "properties": true,
+  "switcher": true,
+  "templates": true,
+  "word-count": true,
+  "workspaces": false,
+  "publish": false,
+  "sync": false
+}

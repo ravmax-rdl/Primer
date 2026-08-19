@@ -1,0 +1,31 @@
+# Design scratch space
+.superpowers/
+
+# Python
+__pycache__/
+*.py[cod]
+
+# Pi runtime state
+.pi/cache/
+**/.pi/cache/
+
+# Obsidian device and workspace state
+**/.obsidian/workspace.json
+**/.obsidian/workspace-mobile.json
+**/.obsidian/cache/
+**/.obsidian/plugins/*/data.json
+
+# Sync and local environment
+.env
+.env.*
+!.env.example
+**/.sync/
+**/.obsidian/plugins/remotely-save/data.json
+
+# Generated previews
+.preview/
+
+# Operating systems
+.DS_Store
+Thumbs.db
+desktop.ini

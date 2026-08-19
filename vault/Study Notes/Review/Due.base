@@ -1,0 +1,41 @@
+filters:
+  and:
+    - file.inFolder("Study Notes/Review")
+    - due <= today()
+properties:
+  note.course:
+    displayName: Course
+  note.due:
+    displayName: Due
+  note.source:
+    displayName: Source
+  note.lapses:
+    displayName: Lapses
+views:
+  - type: table
+    name: Due today
+    order:
+      - file.link
+      - note.course
+      - note.due
+      - note.source
+      - note.lapses
+      - note.ease
+    sort:
+      - property: note.due
+        direction: ASC
+  - type: table
+    name: All cards
+    filters:
+      and:
+        - file.inFolder("Study Notes/Review")
+    order:
+      - file.link
+      - note.course
+      - note.due
+      - note.source
+      - note.reps
+      - note.lapses
+    sort:
+      - property: note.due
+        direction: ASC
