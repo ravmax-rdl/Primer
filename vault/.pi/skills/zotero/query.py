@@ -26,7 +26,7 @@ DB = zotero_db()
 def connect_copy():
     if not DB.exists():
         raise SystemExit("Zotero DB not found at %s" % DB)
-    tmp = Path(tempfile.gettempdir()) / "ucsc-zotero-copy.sqlite"
+    tmp = Path(tempfile.gettempdir()) / "primer-zotero-copy.sqlite"
     shutil.copy2(DB, tmp)
     con = sqlite3.connect("file:%s?mode=ro" % tmp.as_posix(), uri=True)
     con.row_factory = sqlite3.Row

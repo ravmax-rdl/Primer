@@ -1,7 +1,7 @@
 ---
 name: vault-syntax
 description: >
-  The syntax contract for the UCSC learning vault product kit. The tutor loop
+  The syntax contract for the Example University learning vault product kit. The tutor loop
   must emit only syntax that is marked as live in this skill and in
   `Markdown Snippets.md`.
 ---

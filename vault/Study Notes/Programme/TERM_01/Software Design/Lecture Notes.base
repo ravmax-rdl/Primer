@@ -1,0 +1,24 @@
+model:
+  version: 1
+  kind: Table
+  columns: []
+pluginVersion: 1.0.0
+views:
+  - type: cards
+    name: Grid
+    filters:
+      and:
+        - file.name == "Software Design"
+    order:
+      - file.name
+      - course
+      - status
+      - topics
+      - created
+      - type
+    sort:
+      - property: created
+        direction: ASC
+    cardSize: 260
+    image: note.banner
+    imageAspectRatio: 0.55

@@ -15,16 +15,16 @@ interval: 6
 ease: 2.5
 reps: 3
 lapses: 1
-source: "[[Study Notes/BSc/S01_2026/W01/D01/Discrete Mathematics]]"
+source: "[[Study Notes/Programme/TERM_01/W01/D01/Foundations of Logic]]"
 ```
 
 Run from the vault root:
 
 ```bash
 python .pi/skills/spaced-repetition/sm2.py new
-python .pi/skills/spaced-repetition/sm2.py grade "Study Notes/Review/Discrete Mathematics/Implication.md" 4
-python .pi/skills/spaced-repetition/sm2.py due "Study Notes/Review" --subject "Discrete Mathematics"
-python .pi/skills/spaced-repetition/sm2.py peek "Study Notes/Review/Discrete Mathematics/Implication.md"
+python .pi/skills/spaced-repetition/sm2.py grade "Study Notes/Review/Foundations of Logic/Implication.md" 4
+python .pi/skills/spaced-repetition/sm2.py due "Study Notes/Review" --subject "Foundations of Logic"
+python .pi/skills/spaced-repetition/sm2.py peek "Study Notes/Review/Foundations of Logic/Implication.md"
 ```
 
 Grades 0–2 are lapses. Grades 3–5 are successful recall. Do not edit schedule fields by hand. `Study Notes/Review/Due.base` lists cards whose `due` date is today or earlier.

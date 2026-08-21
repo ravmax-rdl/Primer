@@ -93,7 +93,7 @@ Dynamic views are YAML-backed Bases. Examples of common filters:
 ```yaml
 filters:
   and:
-    - file.name == "Discrete Mathematics"
+    - file.name == "Foundations of Logic"
 ```
 
 For the spaced repetition queue:

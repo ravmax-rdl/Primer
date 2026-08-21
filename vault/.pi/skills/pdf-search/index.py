@@ -1,15 +1,12 @@
 #!/usr/bin/env python3
-"""Sidecar plaintext index for vault PDFs.
-
-Resolves Obsidian URI-shortcut .pdf files (file:///...) to the real PDF,
-extracts page text with pdftotext, and falls back to the text-extractor OCR
-cache. Never writes next to the PDF (sidecars would sync as junk).
+"""Portable sidecar text index for vault PDFs.
 
 Usage:
-  python3 index.py index [--root DIR] [--limit N]
-  python3 index.py search <query> [--path SUBSTR] [--n 20]
-  python3 index.py resolve <vault-relative-or-abs.pdf>
-  python3 index.py pages <vault-relative-or-abs.pdf>
+  python index.py index [--root DIR] [--limit N]
+  python index.py search <query> [--path SUBSTR] [--n 20]
+  python index.py resolve <vault-relative-or-abs.pdf>
+  python index.py pages <vault-relative-or-abs.pdf>
+  python index.py doctor [--manifest PATH]
 """
 
 from __future__ import annotations
@@ -21,16 +18,65 @@ import re
 import subprocess
 import sys
 import urllib.parse
+from collections import Counter
+from datetime import datetime, timezone
+from enum import StrEnum
 from pathlib import Path
+from typing import NamedTuple
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
-from lib.vault import find_vault  # noqa: E402
+PI_DIR = Path(__file__).resolve().parents[2]
+if str(PI_DIR) not in sys.path:
+    sys.path.insert(0, str(PI_DIR))
+
+from lib.vault import find_vault
 
 VAULT = find_vault()
 CACHE = VAULT / ".pi" / "cache" / "pdf-index"
 OCR_CACHE = VAULT / ".obsidian" / "plugins" / "text-extractor" / "cache"
 PAGE_RE = re.compile(r"# Page (\d+)\^page=\d+")
-CODE_RE = re.compile(r"(SCS|ENH?|EN|IS)[ _-]?(\d{4})", re.I)
+URI_RE = re.compile(r"^[A-Za-z][A-Za-z0-9+.-]*:")
+MANIFEST_FIELDS = {
+    "path",
+    "kind",
+    "source",
+    "resolved_path",
+    "status",
+    "pages",
+    "text_pages",
+    "chars",
+    "content_hash",
+    "extraction_backend",
+    "extracted_at",
+    "source_stamp",
+    "failure_reason",
+}
+
+
+class SourceStatus(StrEnum):
+    INDEXED = "indexed"
+    MISSING_TARGET = "missing_target"
+    UNSUPPORTED_URI = "unsupported_uri"
+    UNREADABLE = "unreadable"
+    NO_TEXT_LAYER = "no_text_layer"
+    OCR_PENDING = "ocr_pending"
+    FAILED = "failed"
+
+
+class Resolution(NamedTuple):
+    status: SourceStatus | None
+    path: Path | None
+    failure_reason: str | None
+    kind: str = "pdf"
+
+
+class ExtractionResult(NamedTuple):
+    status: SourceStatus
+    pages: int
+    text_pages: int
+    chars: int
+    backend: str | None
+    failure_reason: str | None
+    page_text: tuple[str, ...] = ()
 
 
 def cache_dir() -> Path:
@@ -39,78 +85,145 @@ def cache_dir() -> Path:
     return CACHE
 
 
-def rel(p: Path) -> str:
+def canonical_manifest_path(value: str) -> str:
+    return value.replace("\\", "/")
+
+
+def rel(path: Path) -> str:
     try:
-        return p.relative_to(VAULT).as_posix()
+        return path.resolve().relative_to(VAULT.resolve()).as_posix()
     except ValueError:
-        return str(p)
+        return canonical_manifest_path(str(path))
+
+
+def read_shortcut_uri(path: Path) -> str | None:
+    data = path.read_bytes()[:400]
+    if data.startswith(b"%PDF"):
+        return None
+    first_line = data.decode("utf-8", errors="replace").strip().splitlines()
+    if not first_line:
+        return None
+    candidate = first_line[0].strip()
+    return candidate if URI_RE.match(candidate) else None
 
 
 def is_uri_shortcut(path: Path) -> str | None:
     try:
-        data = path.read_bytes()[:400]
+        return read_shortcut_uri(path)
     except OSError:
         return None
-    if data.startswith(b"%PDF"):
-        return None
-    text = data.decode("utf-8", errors="replace").strip()
-    if text.startswith("file:"):
-        return text.splitlines()[0].strip()
-    return None
 
 
 def uri_to_path(uri: str) -> Path:
     parsed = urllib.parse.urlparse(uri)
+    if parsed.scheme.lower() != "file":
+        raise ValueError("unsupported URI scheme: %s" % (parsed.scheme or "none"))
     raw = urllib.parse.unquote(parsed.path)
+    if parsed.netloc and parsed.netloc not in {"", "localhost"}:
+        raw = "//%s%s" % (parsed.netloc, raw)
     if re.match(r"^/[A-Za-z]:", raw):
         raw = raw[1:]
     return Path(raw)
 
 
-def resolve_pdf(path: Path) -> tuple[Path | None, str]:
-    """Return (real_pdf_or_none, kind). kind: pdf | shortcut | missing | unreadable."""
+def resolve_source(path: Path) -> Resolution:
     try:
-        uri = is_uri_shortcut(path)
-    except OSError:
-        return None, "unreadable"
+        if not path.exists() or not path.is_file():
+            return Resolution(SourceStatus.MISSING_TARGET, None, "source does not exist")
+        uri = read_shortcut_uri(path)
+    except OSError as error:
+        return Resolution(SourceStatus.UNREADABLE, None, str(error))
+
     if uri:
-        target = uri_to_path(uri)
-        if target.exists() and target.stat().st_size > 200:
-            return target, "shortcut"
-        return None, "missing"
+        parsed = urllib.parse.urlparse(uri)
+        if parsed.scheme.lower() != "file":
+            return Resolution(
+                SourceStatus.UNSUPPORTED_URI,
+                None,
+                "unsupported URI scheme: %s" % (parsed.scheme or "none"),
+                "shortcut",
+            )
+        try:
+            target = uri_to_path(uri)
+        except ValueError as error:
+            return Resolution(SourceStatus.UNSUPPORTED_URI, None, str(error), "shortcut")
+        if not target.exists() or not target.is_file():
+            return Resolution(SourceStatus.MISSING_TARGET, None, "shortcut target does not exist", "shortcut")
+        try:
+            if target.read_bytes()[:4] != b"%PDF":
+                return Resolution(SourceStatus.UNREADABLE, None, "shortcut target is not a PDF", "shortcut")
+        except OSError as error:
+            return Resolution(SourceStatus.UNREADABLE, None, str(error), "shortcut")
+        return Resolution(None, target, None, "shortcut")
+
     try:
-        if path.stat().st_size > 200 and path.read_bytes()[:4] == b"%PDF":
-            return path, "pdf"
-    except OSError:
-        return None, "unreadable"
-    return None, "unreadable"
+        if path.read_bytes()[:4] != b"%PDF":
+            return Resolution(SourceStatus.UNREADABLE, None, "source is not a PDF")
+    except OSError as error:
+        return Resolution(SourceStatus.UNREADABLE, None, str(error))
+    return Resolution(None, path, None)
 
 
-def sha1(s: str) -> str:
-    return hashlib.sha1(s.encode("utf-8")).hexdigest()
+def resolve_pdf(path: Path) -> tuple[Path | None, str]:
+    resolution = resolve_source(path)
+    if resolution.path is not None:
+        return resolution.path, resolution.kind
+    return None, resolution.status.value if resolution.status else "unreadable"
 
 
-def pdftotext_pages(pdf: Path) -> list[str]:
+def sha1(value: str) -> str:
+    return hashlib.sha1(value.encode("utf-8")).hexdigest()
+
+
+def file_hash(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as source:
+        for chunk in iter(lambda: source.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def source_stamp(source: Path, resolved: Path | None) -> str | None:
+    stamps: list[str] = []
+    seen: set[Path] = set()
+    for path in (source, resolved):
+        if path is None:
+            continue
+        canonical = path.resolve()
+        if canonical in seen:
+            continue
+        seen.add(canonical)
+        try:
+            stat = canonical.stat()
+        except OSError:
+            return None
+        stamps.append("%d:%d" % (stat.st_mtime_ns, stat.st_size))
+    return "|".join(stamps)
+
+
+def pdftotext_pages(pdf: Path) -> tuple[list[str], str | None]:
     out = cache_dir() / "pages" / (sha1(str(pdf)) + ".extract.txt")
     try:
-        r = subprocess.run(
+        result = subprocess.run(
             ["pdftotext", "-layout", "-enc", "UTF-8", str(pdf), str(out)],
             capture_output=True,
             text=True,
             timeout=90,
         )
-    except (FileNotFoundError, subprocess.TimeoutExpired):
-        return []
-    if r.returncode not in (0, 1) or not out.exists():
-        return []
+    except FileNotFoundError:
+        return [], "pdftotext executable not found"
+    except subprocess.TimeoutExpired:
+        return [], "pdftotext timed out"
+    if result.returncode not in (0, 1) or not out.exists():
+        reason = result.stderr.strip() or "pdftotext exited %d" % result.returncode
+        return [], reason
     text = out.read_text(encoding="utf-8", errors="replace")
-    pages = text.split("\f")
-    cleaned = [p.strip() for p in pages]
-    while cleaned and not cleaned[-1]:
-        cleaned.pop()
-    if len(cleaned) == 1 and len(cleaned[0]) <= 1:
-        return []
-    return cleaned
+    pages = [page.strip() for page in text.split("\f")]
+    while pages and not pages[-1]:
+        pages.pop()
+    if len(pages) == 1 and len(pages[0]) <= 1:
+        pages = []
+    return pages, None
 
 
 def ocr_pages_for(vault_rel: str) -> list[str]:
@@ -127,179 +240,266 @@ def ocr_pages_for(vault_rel: str) -> list[str]:
             continue
         raw = data.get("text") or ""
         chunks = PAGE_RE.split(raw)
-        # split keeps capture groups: [pre, n, body, n, body, ...]
         pages: dict[int, str] = {}
-        i = 1
-        while i + 1 < len(chunks):
+        index = 1
+        while index + 1 < len(chunks):
             try:
-                n = int(chunks[i])
+                page_number = int(chunks[index])
             except ValueError:
-                i += 2
+                index += 2
                 continue
-            pages[n] = chunks[i + 1].strip()
-            i += 2
+            pages[page_number] = chunks[index + 1].strip()
+            index += 2
         if pages:
-            max_n = max(pages)
-            return [pages.get(k, "") for k in range(1, max_n + 1)]
+            return [pages.get(number, "") for number in range(1, max(pages) + 1)]
     return []
 
 
-def extract(vault_pdf: Path) -> tuple[list[str], str, str]:
-    real, kind = resolve_pdf(vault_pdf)
-    pages: list[str] = []
-    if real is not None:
-        pages = pdftotext_pages(real)
-        source = "pdftotext"
+def classify_extraction(
+    pages: list[str],
+    backend: str | None,
+    failure_reason: str | None = None,
+    *,
+    ocr_pending: bool = False,
+) -> ExtractionResult:
+    text_pages = sum(bool(page.strip()) for page in pages)
+    chars = sum(len(page) for page in pages)
+    if failure_reason:
+        status = SourceStatus.FAILED
+    elif text_pages:
+        status = SourceStatus.INDEXED
+    elif ocr_pending:
+        status = SourceStatus.OCR_PENDING
     else:
-        source = kind
-    if not pages:
-        ocr = ocr_pages_for(rel(vault_pdf))
-        if ocr:
-            pages = ocr
-            source = "ocr-cache"
-    return pages, kind if real is None and source != "ocr-cache" else kind, source
+        status = SourceStatus.NO_TEXT_LAYER
+    return ExtractionResult(status, len(pages), text_pages, chars, backend, failure_reason, tuple(pages))
 
 
-def store_pages(vault_rel: str, pages: list[str]) -> Path:
-    dest = cache_dir() / "pages" / (sha1(vault_rel) + ".txt")
-    parts = []
-    for i, page in enumerate(pages, 1):
-        parts.append("===== PAGE %d =====\n%s" % (i, page))
-    dest.write_text("\n\n".join(parts), encoding="utf-8")
-    return dest
+def extract(vault_pdf: Path, resolution: Resolution | None = None) -> ExtractionResult:
+    resolution = resolution or resolve_source(vault_pdf)
+    if resolution.status is not None or resolution.path is None:
+        status = resolution.status or SourceStatus.UNREADABLE
+        return ExtractionResult(status, 0, 0, 0, None, resolution.failure_reason)
+
+    pages, failure = pdftotext_pages(resolution.path)
+    if pages:
+        return classify_extraction(pages, "pdftotext")
+    ocr = ocr_pages_for(rel(vault_pdf))
+    if ocr:
+        return classify_extraction(ocr, "ocr-cache")
+    return classify_extraction([], "pdftotext", failure_reason=failure)
+
+
+def build_manifest_record(
+    source: Path,
+    resolution: Resolution,
+    extraction: ExtractionResult | None,
+) -> dict[str, object]:
+    extraction = extraction or ExtractionResult(
+        resolution.status or SourceStatus.UNREADABLE,
+        0,
+        0,
+        0,
+        None,
+        resolution.failure_reason,
+    )
+    resolved = resolution.path
+    try:
+        content_hash = file_hash(resolved) if resolved is not None else None
+    except OSError:
+        content_hash = None
+    return {
+        "path": rel(source),
+        "kind": resolution.kind,
+        "source": extraction.backend or resolution.kind,
+        "resolved_path": str(resolved) if resolved is not None else None,
+        "status": extraction.status.value,
+        "pages": extraction.pages,
+        "text_pages": extraction.text_pages,
+        "chars": extraction.chars,
+        "content_hash": content_hash,
+        "extraction_backend": extraction.backend,
+        "extracted_at": datetime.now(timezone.utc).isoformat(),
+        "source_stamp": source_stamp(source, resolved),
+        "failure_reason": extraction.failure_reason,
+    }
+
+
+def store_pages(vault_rel: str, pages: tuple[str, ...] | list[str]) -> Path:
+    destination = cache_dir() / "pages" / (sha1(vault_rel) + ".txt")
+    parts = ["===== PAGE %d =====\n%s" % (number, page) for number, page in enumerate(pages, 1)]
+    destination.write_text("\n\n".join(parts), encoding="utf-8")
+    return destination
 
 
 def iter_pdfs(root: Path):
     for dirpath, dirnames, filenames in os.walk(root):
-        dirnames[:] = [d for d in dirnames if d not in {".git", ".obsidian", ".pi", ".trash", "Bin"}]
+        dirnames[:] = [name for name in dirnames if name not in {".git", ".obsidian", ".pi", ".trash", "Bin"}]
         for name in filenames:
             if name.lower().endswith(".pdf"):
                 yield Path(dirpath) / name
 
 
 def cmd_index(root: Path, limit: int | None) -> None:
+    root = root.resolve()
     manifest_path = cache_dir() / "manifest.jsonl"
-    seen: dict[str, dict] = {}
+    seen: dict[str, dict[str, object]] = {}
     if manifest_path.exists():
         for line in manifest_path.read_text(encoding="utf-8").splitlines():
             if not line.strip():
                 continue
-            rec = json.loads(line)
-            seen[rec["path"]] = rec
-    n = 0
+            record = json.loads(line)
+            key = canonical_manifest_path(str(record["path"]))
+            record["path"] = key
+            seen[key] = record
+
+    indexed = 0
     updated = 0
     for pdf in iter_pdfs(root):
         vault_rel = rel(pdf)
-        try:
-            st = pdf.stat()
-        except OSError:
-            continue
-        prev = seen.get(vault_rel)
-        stamp = "%s:%s" % (int(st.st_mtime), st.st_size)
-        if prev and prev.get("stamp") == stamp and prev.get("pages", 0) >= 0:
-            n += 1
-            if limit and n >= limit:
+        resolution = resolve_source(pdf)
+        stamp = source_stamp(pdf, resolution.path)
+        previous = seen.get(vault_rel)
+        if previous and MANIFEST_FIELDS <= set(previous) and previous.get("source_stamp") == stamp:
+            indexed += 1
+            if limit and indexed >= limit:
                 break
             continue
-        pages, kind, source = extract(pdf)
-        if pages:
-            store_pages(vault_rel, pages)
-        rec = {
-            "path": vault_rel,
-            "kind": kind,
-            "source": source,
-            "pages": len(pages),
-            "chars": sum(len(p) for p in pages),
-            "stamp": stamp,
-        }
-        seen[vault_rel] = rec
+        extraction = extract(pdf, resolution)
+        if extraction.status == SourceStatus.INDEXED:
+            store_pages(vault_rel, extraction.page_text)
+        record = build_manifest_record(pdf, resolution, extraction)
+        seen[vault_rel] = record
         updated += 1
-        n += 1
-        print("%s\t%s\t%d pages\t%s" % (source, vault_rel, len(pages), kind))
-        if limit and n >= limit:
+        indexed += 1
+        print("%s\t%s\t%d pages\t%s" % (record["status"], vault_rel, extraction.pages, resolution.kind))
+        if limit and indexed >= limit:
             break
-    with manifest_path.open("w", encoding="utf-8") as f:
-        for rec in sorted(seen.values(), key=lambda r: r["path"]):
-            f.write(json.dumps(rec, ensure_ascii=False) + "\n")
-    print("# indexed %d files, wrote %d, manifest %d" % (n, updated, len(seen)), file=sys.stderr)
+
+    with manifest_path.open("w", encoding="utf-8") as output:
+        for record in sorted(seen.values(), key=lambda value: str(value["path"])):
+            output.write(json.dumps(record, ensure_ascii=False, sort_keys=True) + "\n")
+    print("# indexed %d files, wrote %d, manifest %d" % (indexed, updated, len(seen)), file=sys.stderr)
 
 
 def snippet(text: str, query: str, width: int = 180) -> str:
-    low = text.lower()
-    q = query.lower()
-    i = low.find(q)
-    if i < 0:
+    lower = text.lower()
+    query_lower = query.lower()
+    position = lower.find(query_lower)
+    if position < 0:
         return " ".join(text.split())[:width]
-    start = max(0, i - 60)
-    end = min(len(text), i + len(query) + 120)
-    s = " ".join(text[start:end].split())
-    return ("…" if start else "") + s + ("…" if end < len(text) else "")
+    start = max(0, position - 60)
+    end = min(len(text), position + len(query) + 120)
+    value = " ".join(text[start:end].split())
+    return ("…" if start else "") + value + ("…" if end < len(text) else "")
 
 
-def cmd_search(query: str, path_filter: str | None, n: int) -> None:
+def cmd_search(query: str, path_filter: str | None, limit: int) -> None:
     manifest_path = cache_dir() / "manifest.jsonl"
     if not manifest_path.exists():
-        print("No index yet. Run: python3 index.py index", file=sys.stderr)
-        sys.exit(1)
-    q = query.lower()
+        print("No index yet. Run: python index.py index", file=sys.stderr)
+        raise SystemExit(1)
+    query_lower = query.lower()
     hits = []
     for line in manifest_path.read_text(encoding="utf-8").splitlines():
-        rec = json.loads(line)
-        if rec.get("pages", 0) <= 0:
+        record = json.loads(line)
+        if record.get("status") != SourceStatus.INDEXED.value:
             continue
-        if path_filter and path_filter.lower() not in rec["path"].lower():
+        if path_filter and path_filter.lower() not in str(record["path"]).lower():
             continue
-        page_file = cache_dir() / "pages" / (sha1(rec["path"]) + ".txt")
+        page_file = cache_dir() / "pages" / (sha1(str(record["path"])) + ".txt")
         if not page_file.exists():
             continue
         body = page_file.read_text(encoding="utf-8", errors="replace")
         current_page = 1
-        buf = []
+        buffer = []
         for raw in body.splitlines():
-            m = re.match(r"===== PAGE (\d+) =====", raw)
-            if m:
-                if buf:
-                    text = "\n".join(buf)
-                    if q in text.lower():
-                        hits.append((rec["path"], current_page, snippet(text, query)))
-                current_page = int(m.group(1))
-                buf = []
+            match = re.match(r"===== PAGE (\d+) =====", raw)
+            if match:
+                if buffer:
+                    text = "\n".join(buffer)
+                    if query_lower in text.lower():
+                        hits.append((record["path"], current_page, snippet(text, query)))
+                current_page = int(match.group(1))
+                buffer = []
                 continue
-            buf.append(raw)
-        if buf:
-            text = "\n".join(buf)
-            if q in text.lower():
-                hits.append((rec["path"], current_page, snippet(text, query)))
-        if len(hits) >= n * 4:
+            buffer.append(raw)
+        if buffer:
+            text = "\n".join(buffer)
+            if query_lower in text.lower():
+                hits.append((record["path"], current_page, snippet(text, query)))
+        if len(hits) >= limit * 4:
             break
-    for path, page, snip in hits[:n]:
-        name = Path(path).name
-        cite = "[[%s#page=%d|%s, p.%d]]" % (name, page, Path(name).stem, page)
-        line = "%s\tp.%d\t%s\t%s" % (path, page, cite, snip)
-        print(line.encode("utf-8", errors="replace").decode("utf-8"))
-    print("# %d hit(s)" % min(len(hits), n), file=sys.stderr)
+    for path, page, text in hits[:limit]:
+        name = Path(str(path)).name
+        citation = "[[%s#page=%d|%s, p.%d]]" % (name, page, Path(name).stem, page)
+        print("%s\tp.%d\t%s\t%s" % (path, page, citation, text))
+    print("# %d hit(s)" % min(len(hits), limit), file=sys.stderr)
 
 
 def cmd_resolve(target: str) -> None:
-    p = Path(target)
-    if not p.is_absolute():
-        p = VAULT / target
-    real, kind = resolve_pdf(p)
-    print("kind\t%s" % kind)
-    print("vault\t%s" % rel(p))
-    print("real\t%s" % (real if real else ""))
+    path = Path(target)
+    if not path.is_absolute():
+        path = VAULT / target
+    resolution = resolve_source(path)
+    print("kind\t%s" % resolution.kind)
+    print("status\t%s" % (resolution.status.value if resolution.status else "resolved"))
+    print("vault\t%s" % rel(path))
+    print("real\t%s" % (resolution.path or ""))
 
 
 def cmd_pages(target: str) -> None:
-    p = Path(target)
-    if not p.is_absolute():
-        p = VAULT / target
-    pages, kind, source = extract(p)
-    print("# %s kind=%s source=%s pages=%d" % (rel(p), kind, source, len(pages)))
-    for i, page in enumerate(pages, 1):
-        print("===== PAGE %d =====" % i)
+    path = Path(target)
+    if not path.is_absolute():
+        path = VAULT / target
+    result = extract(path)
+    print("# %s status=%s source=%s pages=%d" % (rel(path), result.status.value, result.backend, result.pages))
+    for number, page in enumerate(result.page_text, 1):
+        print("===== PAGE %d =====" % number)
         print(page)
         print()
+
+
+def cmd_doctor(manifest_path: Path | None = None) -> int:
+    manifest_path = manifest_path or (cache_dir() / "manifest.jsonl")
+    if not manifest_path.exists():
+        print(json.dumps({"blocking": 1, "error": "manifest_missing", "path": str(manifest_path)}, sort_keys=True))
+        return 1
+
+    counts: Counter[str] = Counter()
+    blockers = []
+    legacy = []
+    for line_number, line in enumerate(manifest_path.read_text(encoding="utf-8").splitlines(), 1):
+        if not line.strip():
+            continue
+        try:
+            record = json.loads(line)
+        except json.JSONDecodeError as error:
+            legacy.append({"line": line_number, "reason": str(error)})
+            continue
+        missing = sorted(MANIFEST_FIELDS - set(record))
+        if missing:
+            legacy.append({"path": record.get("path"), "missing": missing})
+            continue
+        status = str(record["status"])
+        counts[status] += 1
+        if status in {
+            SourceStatus.MISSING_TARGET.value,
+            SourceStatus.UNSUPPORTED_URI.value,
+            SourceStatus.UNREADABLE.value,
+            SourceStatus.FAILED.value,
+        }:
+            blockers.append({"path": record["path"], "status": status, "reason": record.get("failure_reason")})
+
+    result = {
+        "blocking": len(blockers) + len(legacy),
+        "blockers": blockers,
+        "counts": dict(sorted(counts.items())),
+        "legacy": legacy,
+        "manifest": str(manifest_path),
+    }
+    print(json.dumps(result, ensure_ascii=False, sort_keys=True))
+    return 1 if result["blocking"] else 0
 
 
 def main() -> None:
@@ -311,9 +511,9 @@ def main() -> None:
     args = sys.argv[1:]
     if not args:
         print(__doc__)
-        sys.exit(2)
-    cmd = args[0]
-    if cmd == "index":
+        raise SystemExit(2)
+    command = args[0]
+    if command == "index":
         root = VAULT
         limit = None
         if "--root" in args:
@@ -321,26 +521,31 @@ def main() -> None:
         if "--limit" in args:
             limit = int(args[args.index("--limit") + 1])
         cmd_index(root, limit)
-    elif cmd == "search" and len(args) >= 2:
+    elif command == "search" and len(args) >= 2:
         path_filter = None
-        n = 20
+        limit = 20
         rest = args[1:]
         if "--path" in rest:
-            i = rest.index("--path")
-            path_filter = rest[i + 1]
-            rest = rest[:i] + rest[i + 2 :]
+            position = rest.index("--path")
+            path_filter = rest[position + 1]
+            rest = rest[:position] + rest[position + 2 :]
         if "--n" in rest:
-            i = rest.index("--n")
-            n = int(rest[i + 1])
-            rest = rest[:i] + rest[i + 2 :]
-        cmd_search(" ".join(rest), path_filter, n)
-    elif cmd == "resolve" and len(args) == 2:
+            position = rest.index("--n")
+            limit = int(rest[position + 1])
+            rest = rest[:position] + rest[position + 2 :]
+        cmd_search(" ".join(rest), path_filter, limit)
+    elif command == "resolve" and len(args) == 2:
         cmd_resolve(args[1])
-    elif cmd == "pages" and len(args) == 2:
+    elif command == "pages" and len(args) == 2:
         cmd_pages(args[1])
+    elif command == "doctor":
+        manifest = None
+        if "--manifest" in args:
+            manifest = Path(args[args.index("--manifest") + 1])
+        raise SystemExit(cmd_doctor(manifest))
     else:
         print(__doc__)
-        sys.exit(2)
+        raise SystemExit(2)
 
 
 if __name__ == "__main__":

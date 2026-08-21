@@ -1,38 +1,37 @@
 ---
 name: pdf-search
 description: >
-  Search and index vault PDFs by extracted text. Resolves Obsidian URI-shortcut
-  PDFs when present, extracts with pdftotext, and can use a text-extractor OCR
-  cache for scan-only documents. Emits page evidence in Obsidian link syntax.
+  Resolve and search vault PDFs with explicit source states and page-level
+  provenance. Never treat a missing target as an OCR candidate.
 ---
 
 # PDF search
 
-## What it does
-
-- Indexes page text for PDFs found under the current vault.
-- Resolves an Obsidian URI-shortcut PDF to its local target when the user has configured one.
-- Tries the optional text-extractor OCR cache when `pdftotext` finds no readable pages.
-- Stores generated index data under `.pi/cache/pdf-index/`, never beside source PDFs.
-
-## Script
-
 Run from the vault root:
 
 ```bash
-python .pi/skills/pdf-search/index.py index
-python .pi/skills/pdf-search/index.py search "equivalence relation"
-python .pi/skills/pdf-search/index.py pages "Study Notes/BSc/S01_2026/Discrete Mathematics/Lecture.pdf"
+python .pi/skills/pdf-search/index.py index --root "Courses"
+python .pi/skills/pdf-search/index.py search "query" --path "Course"
+python .pi/skills/pdf-search/index.py resolve "path/to/source.pdf"
+python .pi/skills/pdf-search/index.py pages "path/to/source.pdf"
+python .pi/skills/pdf-search/index.py doctor
 ```
 
-`index.py` discovers the vault through `.pi/settings.json`. Set `VAULT_ROOT` only when running the script from outside the vault.
+Generated manifests and text stay under `.pi/cache/pdf-index/` rather than
+synced notes. Incremental stamps include the shortcut and resolved target.
 
-## Citations
+Each record is exactly one of:
 
-Cite every page hit with an Obsidian page link:
+- `indexed`
+- `missing_target`
+- `unsupported_uri`
+- `unreadable`
+- `no_text_layer`
+- `ocr_pending`
+- `failed`
 
-```text
-[[Name.pdf#page=N|Name, p.N]]
-```
+Only `no_text_layer` may lead to OCR. Run `doctor` before source-dependent work.
+It reports but never repairs or rewrites the manifest.
 
-Add `rect=x,y,w,h` only when a PDF tool supplied exact coordinates. Never invent a region.
+Cite page-level hits using the vault's established PDF-link syntax. Never invent
+questions, quotations, page numbers, or regions when a source is unavailable.

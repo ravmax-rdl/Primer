@@ -1,26 +1,44 @@
-# Primer Pi runtime guide
+# Academic-agent runtime map
 
-The runtime is already packaged in this vault. Keep this file as a short inventory and rebuild reference. Daily use starts at `START HERE.md`.
+## Public commands
 
-## What loads in a session
+| Command | Purpose |
+|---|---|
+| `/study <course> <minutes> [target-note]` | Probe, teach, practice, record evidence, set next action |
+| `/capture [source] [course] [target-note]` | Normalize one source into one note |
+| `/research <question-or-topic> [target-note]` | Build traceable claims and synthesis |
+| `/exam <course> [question-or-paper] [target-note]` | Time, grade, classify errors, choose card action |
+| `/doctor` | Report PDF manifest health without repairs |
 
-- `CLAUDE.md`: vault structure and safety rules
-- `.pi/APPEND_SYSTEM.md`: teaching protocol and hard rules
-- `.pi/LEARNER.md`: editable learner preferences
-- `.pi/settings.json`: project settings
-- `.pi/prompts/*.md`: slash commands
-- `.pi/skills/*/SKILL.md`: vault syntax and deterministic tools
-- `.pi/agents/academic.md`: the `@academic` tutor agent
-- `.pi/extensions/guard/`: generic credential and recovery path blocking
+The 25 specialist workflows are internal references under
+`.pi/skills/academic-workflow/references/`.
 
-Vault-visible runtime files include `Study Notes/Review/Due.base`, `Papers & Reviews/BSc/Crosswalk.md`, and `Papers & Reviews/BSc/crosswalk.json`.
+## Deterministic runtime
 
-## Rebuild outline
+- `.pi/lib/vault.py`: portable vault discovery
+- `.pi/skills/pdf-search/index.py`: source states, extraction, search, doctor
+- `.pi/skills/academic-workflow/learning_state.py`: evidence, IDs, validation,
+  latest concept state, card decisions
+- `.pi/skills/spaced-repetition/sm2.py`: card scheduling
+- `.pi/skills/canvas-gen/layout.py`: canvas placement
+- `.pi/skills/past-papers/lookup.py`: course mapping
 
-1. Install Pi and the required packages listed in the repository's `docs/setup.md`.
-2. Run Pi from the `vault/` directory and review the project trust prompt.
-3. Confirm Pi discovers this project's prompts, skills, agent, extension, and settings once each.
-4. Run `python .pi/skills/spaced-repetition/sm2.py new`.
-5. Follow the fictional demo in `START HERE.md` before adding personal notes.
+## Contracts
 
-Provider connectors, PDF tools, Zotero, Canvas helpers, and visual Obsidian plugins are optional. Add them only for the workflows that use them.
+PDF statuses are `indexed`, `missing_target`, `unsupported_uri`, `unreadable`,
+`no_text_layer`, `ocr_pending`, and `failed`. Zero pages do not imply OCR.
+
+Assessment errors are `recall`, `concept`, `translation`, `procedure`,
+`calculation`, `misread`, `incomplete-justification`, and `time-management`.
+Card actions are `create`, `revise`, `suspend`, and `none`.
+
+Dynamic state stays in the selected note. A turn writes one note. Distribution
+runtime contains no personal paths, credentials, source manifests, or learner
+evidence.
+
+## Verification
+
+```bash
+python -m unittest discover -s tests -v
+python scripts/verify.py
+```

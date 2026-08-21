@@ -1,45 +1,34 @@
----
-type: reference
-tags:
-  - primer/reference
----
-# Primer command desk
+# Primer vault
 
-New here? Open [[START HERE]].
+This is the portable Obsidian fixture installed with Primer.
 
-## Learning loop
+## Commands
 
-```mermaid
-flowchart LR
-  P[Probe] --> T[Teach one step]
-  T --> C[Create cards]
-  C --> R[Review]
-  R --> E[Exercises]
-  E -->|gap| T
-```
-
-| Command | Use |
+| Command | Purpose |
 |---|---|
-| `/probe <course> [note]` | Map known, edge, unknown, and blocked strands without teaching. |
-| `/teach <course> [note]` | Plan, teach one reasoning step, and ask a lock-in question. |
-| `/cards <note>` | Convert locked or edge ideas into atomic review cards. |
-| `/review [course] [count]` | Drill due cards and let `sm2.py` schedule the result. |
-| `/exercises <course> [topic]` | Retrieve practice material; keep assignment answers learner-authored. |
-| `/classify <course>` | Organize real or fictional paper questions by topic after checking the course crosswalk. |
-| `/mock <course> [minutes]` | Run timed practice one question at a time. |
-| `/postmortem <mock>` | Separate knowledge gaps, misconceptions, and careless errors. |
-| `/overview <course>` | Build or merge a concept Canvas with script-owned coordinates. |
-| `/gap <course>` | Find source material that has no matching day note. |
+| `/study <course> <minutes> [target-note]` | Closed-loop learning and evidence |
+| `/capture [source] [course] [target-note]` | One-source, one-note ingestion |
+| `/research <question-or-topic> [target-note]` | Claim–evidence research |
+| `/exam <course> [question-or-paper] [target-note]` | Timed attempt and postmortem |
+| `/doctor` | Read-only PDF source health |
 
-## File rules
+## Fixture paths
 
-- Day notes live under `Study Notes/BSc/S01_2026/W##/D##/`.
-- A day note's filename must equal the course name used by `Lecture Notes.base`.
-- Review cards live under `Study Notes/Review/<Course>/` and link back through `source`.
-- Attachments live under `Bin/`.
-- Agents work on one named note per turn.
-- Credentials, recovery material, private keys, tokens, and `.env` files do not belong in the vault.
+- Term: `Study Notes/Programme/TERM_01/`
+- Demo course: `Foundations of Logic`
+- Demo day note: `W01/D01/Foundations of Logic.md`
+- Cards: `Study Notes/Review/Foundations of Logic/`
+- Crosswalk: `Papers & Reviews/Programme/crosswalk.json`
 
-## Demo
+Replace fictional values before live use. A day-note filename must equal its
+course Base join key.
 
-Open [[Study Notes/BSc/S01_2026/W01/D01/Discrete Mathematics]]. Every included question and explanation is a fictional Primer example, not UCSC course or examination content.
+## Rules
+
+- One note per turn.
+- Dynamic state is validated evidence in the target note, not learner-profile
+  prose.
+- Missing PDFs are not OCR work.
+- Grading states source and confidence.
+- Cards require deterministic postmortem action.
+- Credentials and recovery material do not belong in the vault.

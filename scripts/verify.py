@@ -66,6 +66,24 @@ PERSONAL_PATHS = (
     re.compile(r"file:///", re.IGNORECASE),
 )
 MARKDOWN_LINK = re.compile(r"(?<!!)\[[^\]]+\]\(([^)]+)\)")
+VISIBLE_PROMPTS = {"study.md", "capture.md", "research.md", "exam.md", "doctor.md"}
+SPECIALIST_REFERENCES = {
+    "lecture-video.md", "lecture.md", "probe.md", "teach.md", "classify.md",
+    "overview.md", "mock.md", "postmortem.md", "weakspots.md", "review.md",
+    "cards.md", "cram.md", "cite.md", "gap.md", "exercises.md", "feynman.md",
+    "paper.md", "worked.md", "source.md", "find.md", "synth.md", "summary.md",
+    "predict.md", "paper-review.md", "crosswalk.md",
+}
+WORKFLOW_RUNTIME = {
+    "vault/.pi/skills/academic-workflow/learning_state.py",
+    "vault/.pi/skills/pdf-search/index.py",
+}
+PRIVATE_TEMPLATE_VALUE = re.compile(r"\b(?:Ravmax|UCSC|S01_2026|Discrete Mathematics)\b", re.IGNORECASE)
+REMOVED_COMMAND = re.compile(
+    r"(?<![\w.-])/(?:lecture-video|lecture|probe|teach|classify|overview|mock|"
+    r"postmortem|weakspots|review|cards|cram|cite|gap|exercises|feynman|paper|"
+    r"worked|source|find|synth|summary|predict|paper-review|crosswalk)\b"
+)
 
 
 def relative(path: Path, root: Path) -> str:
@@ -127,6 +145,24 @@ def verify_repository(root: Path) -> list[str]:
         if not (root / required).is_file():
             errors.append(f"Missing required file: {required}")
 
+    for required in sorted(WORKFLOW_RUNTIME):
+        if not (root / required).is_file():
+            errors.append(f"Missing workflow runtime: {required}")
+
+    prompts = root / "vault/.pi/prompts"
+    actual_prompts = {path.name for path in prompts.glob("*.md")} if prompts.is_dir() else set()
+    for name in sorted(actual_prompts - VISIBLE_PROMPTS):
+        errors.append(f"Unexpected visible prompt: {name}")
+    for name in sorted(VISIBLE_PROMPTS - actual_prompts):
+        errors.append(f"Missing visible prompt: {name}")
+
+    references = root / "vault/.pi/skills/academic-workflow/references"
+    actual_references = {path.name for path in references.glob("*.md")} if references.is_dir() else set()
+    for name in sorted(SPECIALIST_REFERENCES - actual_references):
+        errors.append(f"Missing academic workflow reference: {name}")
+    for name in sorted(actual_references - SPECIALIST_REFERENCES):
+        errors.append(f"Unexpected academic workflow reference: {name}")
+
     for path in iter_files(root):
         display_path = relative(path, root)
         if is_forbidden_generated_file(path, root):
@@ -150,6 +186,11 @@ def verify_repository(root: Path) -> list[str]:
             pattern.search(text) for pattern in PERSONAL_PATHS
         ):
             errors.append(f"Personal or external absolute path: {display_path}")
+        parts = path.relative_to(root).parts
+        if parts and parts[0] == "vault" and PRIVATE_TEMPLATE_VALUE.search(text):
+            errors.append(f"Private template value: {display_path}")
+        if parts[:2] == ("vault", ".pi") and REMOVED_COMMAND.search(text):
+            errors.append(f"Stale callable specialist command: {display_path}")
 
     errors.extend(check_links(root))
     return sorted(set(errors))

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Resolve a paper code or course name through crosswalk.json."""
+"""Resolve a paper code or course name through the distribution crosswalk."""
 
 from __future__ import annotations
 
@@ -12,52 +12,47 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from lib.vault import find_vault  # noqa: E402
 
 VAULT = find_vault()
-DOC = VAULT / "Papers & Reviews" / "BSc" / "crosswalk.json"
-CODE_RE = re.compile(r"(SCS|ENH?|EN|IS)[ _-]?(\d{4})", re.I)
+DOC = VAULT / "Papers & Reviews" / "Programme" / "crosswalk.json"
+CODE_RE = re.compile(r"([A-Za-z]+)[ _-]?(\d+)", re.I)
 
 
 def norm(code: str) -> str:
-    m = CODE_RE.search(code)
-    if not m:
+    match = CODE_RE.search(code)
+    if not match:
         return code.strip()
-    prefix = m.group(1).upper()
-    if prefix == "ENH":
-        prefix = "ENH"
-    elif prefix == "EN":
-        prefix = "EN"
-    return "%s %s" % (prefix, m.group(2))
+    return "%s%s" % (match.group(1).upper(), match.group(2))
 
 
 def main() -> None:
     if len(sys.argv) < 2:
         print("usage: lookup.py <code-or-course-name>")
-        sys.exit(2)
-    q = " ".join(sys.argv[1:]).strip()
+        raise SystemExit(2)
+    query = " ".join(sys.argv[1:]).strip()
     data = json.loads(DOC.read_text(encoding="utf-8"))
-    code = norm(q)
-    rec = data["map"].get(code)
-    if rec:
+    code = norm(query)
+    record = data["map"].get(code)
+    if record:
         print("code\t%s" % code)
-        print("title\t%s" % rec.get("title"))
-        print("current\t%s" % ",".join(rec.get("current") or []))
-        print("confidence\t%s" % rec.get("confidence"))
-        if rec.get("notes"):
-            print("notes\t%s" % rec["notes"])
-        if not rec.get("current"):
-            print("BLOCK\tno current Y1 S1 equivalent — exclude from /mock")
-        elif rec.get("confidence") == "low":
-            print("BLOCK\tlow confidence — confirm before /mock")
+        print("title\t%s" % record.get("title"))
+        print("current\t%s" % ",".join(record.get("current") or []))
+        print("confidence\t%s" % record.get("confidence"))
+        if record.get("notes"):
+            print("notes\t%s" % record["notes"])
+        if not record.get("current"):
+            print("BLOCK\tno current equivalent — exclude from exam selection")
+        elif record.get("confidence") == "low":
+            print("BLOCK\tlow confidence — confirm before exam selection")
         return
-    qlow = q.lower()
-    for cur in data["current"]:
-        if qlow in cur["course"].lower() or qlow == cur["code"].lower():
-            print("code\t%s" % cur["code"])
-            print("title\t%s" % cur["course"])
-            print("current\t%s" % cur["code"])
+    query_lower = query.lower()
+    for current in data["current"]:
+        if query_lower in current["course"].lower() or query_lower == current["code"].lower():
+            print("code\t%s" % current["code"])
+            print("title\t%s" % current["course"])
+            print("current\t%s" % current["code"])
             print("confidence\thigh")
             return
-    print("unknown\t%s" % q)
-    sys.exit(1)
+    print("unknown\t%s" % query)
+    raise SystemExit(1)
 
 
 if __name__ == "__main__":

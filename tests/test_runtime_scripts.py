@@ -44,14 +44,14 @@ class RuntimeScriptTests(unittest.TestCase):
         script = PI / "skills/past-papers/lookup.py"
         environment = {"VAULT_ROOT": str(VAULT)}
 
-        mapped = run_python(script, "SCS 1204", env=environment)
-        blocked = run_python(script, "SCS 1203", env=environment)
+        mapped = run_python(script, "LEGACY102", env=environment)
+        blocked = run_python(script, "LEGACY999", env=environment)
 
         self.assertEqual(mapped.returncode, 0, mapped.stderr)
-        self.assertIn("current\tSCS 1302", mapped.stdout)
+        self.assertIn("current\tCOURSE102", mapped.stdout)
         self.assertNotIn("BLOCK", mapped.stdout)
         self.assertEqual(blocked.returncode, 0, blocked.stderr)
-        self.assertIn("BLOCK\tno current Y1 S1 equivalent", blocked.stdout)
+        self.assertIn("BLOCK\tno current equivalent", blocked.stdout)
 
     def test_canvas_layout_places_dependencies_left_to_right(self) -> None:
         graph = {
@@ -83,19 +83,19 @@ class RuntimeScriptTests(unittest.TestCase):
 
 class DemoVaultTests(unittest.TestCase):
     def test_demo_course_and_cards_form_a_complete_learning_path(self) -> None:
-        course_index = VAULT / "Study Notes/BSc/S01_2026/Discrete Mathematics/Discrete Mathematics.md"
-        lecture_base = VAULT / "Study Notes/BSc/S01_2026/Discrete Mathematics/Lecture Notes.base"
-        day_note = VAULT / "Study Notes/BSc/S01_2026/W01/D01/Discrete Mathematics.md"
+        course_index = VAULT / "Study Notes/Programme/TERM_01/Foundations of Logic/Foundations of Logic.md"
+        lecture_base = VAULT / "Study Notes/Programme/TERM_01/Foundations of Logic/Lecture Notes.base"
+        day_note = VAULT / "Study Notes/Programme/TERM_01/W01/D01/Foundations of Logic.md"
         cards = (
-            VAULT / "Study Notes/Review/Discrete Mathematics/Implication.md",
-            VAULT / "Study Notes/Review/Discrete Mathematics/Contrapositive.md",
+            VAULT / "Study Notes/Review/Foundations of Logic/Implication.md",
+            VAULT / "Study Notes/Review/Foundations of Logic/Contrapositive.md",
         )
 
         self.assertTrue(course_index.is_file())
         self.assertTrue(lecture_base.is_file())
         self.assertTrue(day_note.is_file())
         base_text = lecture_base.read_text(encoding="utf-8")
-        self.assertIn('file.name == "Discrete Mathematics"', base_text)
+        self.assertIn('file.name == "Foundations of Logic"', base_text)
 
         for card in cards:
             self.assertTrue(card.is_file(), card)
@@ -105,7 +105,7 @@ class DemoVaultTests(unittest.TestCase):
             self.assertRegex(text, r"ease: \d+(?:\.\d+)?")
             self.assertRegex(text, r"reps: \d+")
             self.assertRegex(text, r"lapses: \d+")
-            self.assertIn("[[Study Notes/BSc/S01_2026/W01/D01/Discrete Mathematics]]", text)
+            self.assertIn("[[Study Notes/Programme/TERM_01/W01/D01/Foundations of Logic]]", text)
 
         day_text = day_note.read_text(encoding="utf-8")
         self.assertIn("## Understanding map", day_text)

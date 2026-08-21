@@ -21,6 +21,15 @@ REQUIRED_FILES = ("README.md", "LICENSE", "LICENSE-CODE",
 "vault/.pi/LEARNER.md",
 "vault/.obsidian/app.json",)
 
+VISIBLE_PROMPTS = {"study.md", "capture.md", "research.md", "exam.md", "doctor.md"}
+SPECIALIST_REFERENCES = {
+    "lecture-video.md", "lecture.md", "probe.md", "teach.md", "classify.md",
+    "overview.md", "mock.md", "postmortem.md", "weakspots.md", "review.md",
+    "cards.md", "cram.md", "cite.md", "gap.md", "exercises.md", "feynman.md",
+    "paper.md", "worked.md", "source.md", "find.md", "synth.md", "summary.md",
+    "predict.md", "paper-review.md", "crosswalk.md",
+}
+
 
 class VerifyRepositoryTests(unittest.TestCase):
     def make_repository(self, root: Path) -> None:
@@ -33,6 +42,21 @@ class VerifyRepositoryTests(unittest.TestCase):
                 path.write_text('<svg xmlns="http://www.w3.org/2000/svg"/>', encoding="utf-8")
             else:
                 path.write_text("# Safe fixture\n", encoding="utf-8")
+        prompts = root / "vault/.pi/prompts"
+        references = root / "vault/.pi/skills/academic-workflow/references"
+        prompts.mkdir(parents=True, exist_ok=True)
+        references.mkdir(parents=True, exist_ok=True)
+        for name in VISIBLE_PROMPTS:
+            (prompts / name).write_text("---\ndescription: safe\nargument-hint: ''\n---\n", encoding="utf-8")
+        for name in SPECIALIST_REFERENCES:
+            (references / name).write_text("# Internal reference\n", encoding="utf-8")
+        for relative_path in (
+            "vault/.pi/skills/academic-workflow/learning_state.py",
+            "vault/.pi/skills/pdf-search/index.py",
+        ):
+            path = root / relative_path
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text("# safe runtime\n", encoding="utf-8")
 
     def test_accepts_complete_safe_repository(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -114,6 +138,29 @@ class VerifyRepositoryTests(unittest.TestCase):
             self.make_repository(root)
             (root / "README.md").write_text("[Setup](docs/missing.md)\n", encoding="utf-8")
             self.assertIn("Broken link in README.md: docs/missing.md", verify_repository(root))
+
+
+    def test_rejects_extra_visible_prompt(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self.make_repository(root)
+            (root / "vault/.pi/prompts/teach.md").write_text("# stale command\n", encoding="utf-8")
+            self.assertIn("Unexpected visible prompt: teach.md", verify_repository(root))
+
+    def test_rejects_missing_internal_reference(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self.make_repository(root)
+            (root / "vault/.pi/skills/academic-workflow/references/probe.md").unlink()
+            self.assertIn("Missing academic workflow reference: probe.md", verify_repository(root))
+
+    def test_rejects_private_template_values_in_vault(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self.make_repository(root)
+            (root / "vault/START HERE.md").write_text("UCSC S01_2026 Discrete Mathematics\n", encoding="utf-8")
+            errors = verify_repository(root)
+            self.assertTrue(any(error.startswith("Private template value:") for error in errors))
 
 
 if __name__ == "__main__":

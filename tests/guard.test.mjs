@@ -20,7 +20,7 @@ for (const path of blocked) {
 }
 
 const allowed = [
-  "Study Notes/Review/Discrete Mathematics/Implication.md",
+  "Study Notes/Review/Foundations of Logic/Implication.md",
   "Dev/CMD Snippets.md",
   "docs/security.md",
   "assets/key-concepts.svg",

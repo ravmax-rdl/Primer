@@ -1,0 +1,26 @@
+filters:
+  and:
+    - file.inFolder("Study Notes/Programme/TERM_01")
+    - 'file.name == "Foundations of Logic"'
+    - 'file.path != "Study Notes/Programme/TERM_01/Foundations of Logic/Foundations of Logic.md"'
+properties:
+  note.date:
+    displayName: Date
+  note.week:
+    displayName: Week
+  note.day:
+    displayName: Day
+  note.status:
+    displayName: Status
+views:
+  - type: table
+    name: Lecture notes
+    order:
+      - file.link
+      - note.date
+      - note.week
+      - note.day
+      - note.status
+    sort:
+      - property: note.date
+        direction: ASC

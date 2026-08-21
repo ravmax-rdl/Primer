@@ -1,0 +1,33 @@
+{
+  "term": "TERM_01",
+  "revision_rule": "Replace this fixture with your institution's documented course-code mapping.",
+  "sources": [
+    "Course-note subject properties",
+    "Official programme handbook or timetable"
+  ],
+  "current": [
+    {
+      "code": "COURSE102",
+      "course": "Foundations of Logic",
+      "color": "#4C78A880"
+    }
+  ],
+  "map": {
+    "LEGACY102": {
+      "title": "Logic Foundations",
+      "current": [
+        "COURSE102"
+      ],
+      "confidence": "high",
+      "via": "fixture",
+      "notes": "Fictional mapping for distribution verification."
+    },
+    "LEGACY999": {
+      "title": "Retired Example Course",
+      "current": [],
+      "confidence": "high",
+      "via": null,
+      "notes": "Fictional unmapped example."
+    }
+  }
+}

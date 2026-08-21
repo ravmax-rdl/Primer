@@ -12,7 +12,7 @@ The helper returns bibliographic metadata without querying Zotero's live databas
 Run from the vault root:
 
 ```bash
-python .pi/skills/zotero/query.py search "discrete mathematics"
+python .pi/skills/zotero/query.py search "example topic"
 python .pi/skills/zotero/query.py collections
 python .pi/skills/zotero/query.py get "citekey-or-item-id"
 ```
