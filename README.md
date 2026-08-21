@@ -1,6 +1,4 @@
-<p align="center">
-  <img src="assets/hero.svg" alt="Primer — a Pi and Obsidian academic vault" width="960">
-</p>
+# Primer
 
 <p align="center">
   <strong>A local-first academic vault where Pi probes, teaches, assesses, and records evidence in Obsidian.</strong>
@@ -53,10 +51,6 @@ A session starts with diagnosis rather than exposition. It teaches one dependenc
 The 25 specialist procedures remain under `vault/.pi/skills/academic-workflow/references/`. They implement the five workflows without cluttering Pi's slash-command list.
 
 ## How it works
-
-<p align="center">
-  <img src="assets/architecture.svg" alt="Pi flows through deterministic skills into an Obsidian academic vault" width="900">
-</p>
 
 The model owns questioning, explanation, comparison, and feedback. Standard-library Python utilities own outcomes that should not drift:
 
