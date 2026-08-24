@@ -36,6 +36,22 @@ of these errors:
 Card actions are `create`, `revise`, `suspend`, or `none`. Recall and concept
 failures may justify cards; other errors normally justify targeted practice.
 
+### Scanned paper to answer script
+
+When a paper reports `no_text_layer`, run:
+
+```bash
+python .pi/skills/pdf-search/index.py ocr-pages \
+  "Papers & Reviews/Programme/Y01_S01/2025/COURSE101.pdf" --dpi 180
+```
+
+The command resolves a PDF++ shortcut and renders the real target. Read every
+returned page image, preserve question order and marks, then write one note to
+`Papers & Reviews/Programme/Y01_S01/Answer Scripts/<year>/`. Link the question
+paper and checking source, set `ocr-route: resolved-pdf-raster`, separate the
+transcription from authored answers, and mark unreadable text rather than
+inventing it.
+
 ## Capture
 
 ```text

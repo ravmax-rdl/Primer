@@ -13,8 +13,11 @@ readable source exists.
 
 ## `/doctor` reports `no_text_layer`
 
-The source is readable but extraction found no text. OCR may be appropriate.
-After OCR completes, reindex the source and rerun `/doctor`.
+The source is readable but extraction found no text. From the vault root, run
+`python .pi/skills/pdf-search/index.py ocr-pages "<vault PDF>" --dpi 180`.
+Read every returned page image, create the intended note, then reindex only if
+you also produced searchable OCR text. The renderer does not rewrite the PDF or
+manifest.
 
 ## `/doctor` reports legacy records
 
@@ -37,10 +40,11 @@ or malformed JSON. Validation failure leaves the note unchanged.
 Enable the Bases core plugin. Confirm the note path matches your configured term
 and the filename equals the Base's join key.
 
-## `pdftotext` is missing
+## `pdftotext` or `pdftoppm` is missing
 
-Install Poppler for the current platform and confirm `pdftotext` is on `PATH`.
-A missing backend is `failed`, not `no_text_layer`.
+Install Poppler for the current platform and confirm both executables are on
+`PATH`. `pdftotext` extracts existing text; `pdftoppm` renders scan-only sources
+for vision/OCR. A missing backend is a runtime failure, not `no_text_layer`.
 
 ## Release verifier fails
 

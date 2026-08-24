@@ -57,6 +57,19 @@ class WorkflowPromptTests(unittest.TestCase):
         self.assertIn("pdf-search/index.py doctor", text)
         self.assertRegex(text.lower(), r"do not (write|modify|repair)")
 
+    def test_past_paper_ocr_writes_year_scoped_answer_script_notes(self) -> None:
+        pdf_search = (VAULT / ".pi" / "skills" / "pdf-search" / "SKILL.md").read_text(encoding="utf-8")
+        past_papers = (VAULT / ".pi" / "skills" / "past-papers" / "SKILL.md").read_text(encoding="utf-8")
+
+        self.assertIn("ocr-pages", pdf_search)
+        self.assertIn("resolved target", pdf_search.lower())
+        self.assertIn("Papers & Reviews/Programme/Y01_S01/Answer Scripts/<year>/", past_papers)
+        self.assertIn("question-paper", past_papers)
+        self.assertIn("resolved-pdf-raster", past_papers)
+        self.assertTrue(
+            (VAULT / "Papers & Reviews" / "Programme" / "Y01_S01" / "Answer Scripts").is_dir()
+        )
+
     def test_visible_prompts_do_not_call_removed_commands(self) -> None:
         stems = (re.escape(Path(name).stem) for name in SPECIALIST)
         removed = re.compile(r"(?<![\w.-])/(?:" + "|".join(stems) + r")(?![\w.-])")

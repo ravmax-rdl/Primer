@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+import contextlib
 import importlib.util
 import json
+import subprocess
 import tempfile
 import unittest
+from collections.abc import Iterator
 from pathlib import Path
 
 
@@ -13,6 +16,28 @@ SPEC = importlib.util.spec_from_file_location("pdf_index_contract", SCRIPT)
 assert SPEC and SPEC.loader
 index = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(index)
+
+
+@contextlib.contextmanager
+def ocr_fixture(pages: list[str] | None = None) -> Iterator[tuple[Path, Path, Path]]:
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        real_pdf = root / "real paper.pdf"
+        real_pdf.write_bytes(b"%PDF" + b"x" * 256)
+        shortcut = root / "paper.pdf"
+        shortcut.write_text(real_pdf.as_uri(), encoding="utf-8")
+        original_cache = index.CACHE
+        original_extract = index.extract
+        try:
+            index.CACHE = root / "cache"
+            index.extract = lambda *_args, **_kwargs: index.classify_extraction(
+                pages or [],
+                "pdftotext",
+            )
+            yield root, real_pdf, shortcut
+        finally:
+            index.CACHE = original_cache
+            index.extract = original_extract
 
 
 class PdfStatusTests(unittest.TestCase):
@@ -71,6 +96,53 @@ class PdfStatusTests(unittest.TestCase):
             },
         )
         self.assertEqual(record["status"], "indexed")
+
+    def test_render_for_ocr_uses_resolved_pdf_and_orders_page_images(self) -> None:
+        commands: list[list[str]] = []
+
+        def fake_run(command: list[str], **_kwargs: object) -> subprocess.CompletedProcess[str]:
+            commands.append(command)
+            Path(command[-1] + "-10.png").write_bytes(b"page 10")
+            Path(command[-1] + "-2.png").write_bytes(b"page 2")
+            return subprocess.CompletedProcess(command, 0, "", "")
+
+        with ocr_fixture() as (_root, real_pdf, shortcut):
+            result = index.render_for_ocr(shortcut, run=fake_run)
+
+        self.assertEqual([path.name for path in result], ["page-2.png", "page-10.png"])
+        self.assertEqual(Path(commands[0][-2]), real_pdf)
+
+    def test_render_for_ocr_rejects_searchable_sources(self) -> None:
+        def unexpected_run(*_args: object, **_kwargs: object) -> None:
+            raise AssertionError("renderer must not run")
+
+        with ocr_fixture(["searchable text"]) as (_root, _real_pdf, shortcut):
+            with self.assertRaisesRegex(ValueError, "requires no_text_layer"):
+                index.render_for_ocr(shortcut, run=unexpected_run)
+
+    def test_render_for_ocr_reuses_cached_images(self) -> None:
+        calls = 0
+
+        def fake_run(command: list[str], **_kwargs: object) -> subprocess.CompletedProcess[str]:
+            nonlocal calls
+            calls += 1
+            Path(command[-1] + "-1.png").write_bytes(b"page")
+            return subprocess.CompletedProcess(command, 0, "", "")
+
+        with ocr_fixture() as (_root, _real_pdf, shortcut):
+            first = index.render_for_ocr(shortcut, run=fake_run)
+            second = index.render_for_ocr(shortcut, run=fake_run)
+
+        self.assertEqual(first, second)
+        self.assertEqual(calls, 1)
+
+    def test_render_for_ocr_reports_renderer_failure(self) -> None:
+        def failed_run(command: list[str], **_kwargs: object) -> subprocess.CompletedProcess[str]:
+            return subprocess.CompletedProcess(command, 2, "", "renderer failed")
+
+        with ocr_fixture() as (_root, _real_pdf, shortcut):
+            with self.assertRaisesRegex(RuntimeError, "renderer failed"):
+                index.render_for_ocr(shortcut, run=failed_run)
 
     def test_doctor_rejects_legacy_manifest_without_rewriting(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

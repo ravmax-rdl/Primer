@@ -6,7 +6,8 @@
 4. Copy `.pi/LEARNER.md` fields from the generic template; do not add dynamic
    mastery.
 5. Replace the fictional term, course, and crosswalk fixtures.
-6. Install `pdftotext` if PDF text extraction is required.
+6. Install Poppler (`pdftotext` and `pdftoppm`) if PDF extraction or scan OCR is
+   required.
 7. From the repository root, run:
 
 ```bash

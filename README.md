@@ -171,7 +171,10 @@ Every indexed source is one of:
 - `ocr_pending`
 - `failed`
 
-Only `no_text_layer` is an OCR candidate. Missing targets are source-repair work, not OCR work.
+Only `no_text_layer` is an OCR candidate. For a scanned PDF++ placeholder,
+`ocr-pages` resolves the linked real PDF, rasterizes it under
+`.pi/cache/pdf-index/ocr/`, and returns ordered images for the vision/OCR pass.
+Missing targets are source-repair work, not OCR work.
 
 ## Customization
 
@@ -188,7 +191,8 @@ Start with `vault/.pi/LEARNER.md`, then replace the fictional term, course, and 
 | `pi-obsidian` | Required for documented vault tools | Distribution setting |
 | `pi-ask-user` | Required for model-callable questions | Distribution setting |
 | Windows, macOS, Linux | Supported | Platform-specific commands are documented in setup |
-| PDF, Zotero, web tools | Optional | Install only for workflows that use them |
+| Poppler PDF tools | Required for PDF workflows | `pdftotext` for text; `pdftoppm` for scan rendering |
+| Zotero and web tools | Optional | Install only for workflows that use them |
 
 ## Privacy and security
 
@@ -202,7 +206,7 @@ Keep credentials, recovery material, private keys, tokens, and `.env` files outs
 
 - Course crosswalks require human review when curricula change.
 - Primer cannot claim an official mark without an authoritative marking source.
-- Scan-only PDFs require OCR before search.
+- Scan-only PDFs require Poppler page rendering and a vision/OCR pass before search.
 - Obsidian can display due cards on mobile, but Pi performs interactive grading in a terminal.
 - Screenshots and optional visual themes are examples, not bundled runtime requirements.
 

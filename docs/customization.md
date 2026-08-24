@@ -29,6 +29,10 @@ restore specialist aliases under `.pi/prompts/`.
 
 ## PDF sources
 
-Use `VAULT_ROOT` for portable script execution. Keep generated manifests and
-page text under `.pi/cache/`. Add extraction backends only when they can return
-an explicit failure reason and map cleanly to the status model.
+Use `VAULT_ROOT` for portable script execution. Keep generated manifests, page
+text, and OCR renderings under `.pi/cache/`. Preserve
+`Papers & Reviews/Programme/Y01_S01/Answer Scripts/<year>/` or replace it with
+one documented year-scoped equivalent. An answer-script note links its
+question paper and checking source and sets `ocr-route: resolved-pdf-raster`.
+Add extraction backends only when they return an explicit failure reason and
+map cleanly to the seven-state model.

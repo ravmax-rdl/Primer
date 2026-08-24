@@ -8,6 +8,8 @@ Primer follows semantic versioning for published releases.
   `/research`, `/exam`, and `/doctor`.
 - Added explicit PDF source states, provenance fields, canonical manifest paths,
   and a read-only doctor.
+- Added resolved-target scan rendering and year-scoped answer-script guidance
+  for PDF++ placeholder papers.
 - Added validated study and assessment evidence, stable IDs, a fixed error
   taxonomy, and deterministic postmortem card actions.
 - Moved 25 specialist workflows into internal academic-workflow references.

@@ -6,6 +6,7 @@ Usage:
   python index.py search <query> [--path SUBSTR] [--n 20]
   python index.py resolve <vault-relative-or-abs.pdf>
   python index.py pages <vault-relative-or-abs.pdf>
+  python index.py ocr-pages <vault-relative-or-abs.pdf> [--dpi 200]
   python index.py doctor [--manifest PATH]
 """
 
@@ -290,6 +291,51 @@ def extract(vault_pdf: Path, resolution: Resolution | None = None) -> Extraction
     return classify_extraction([], "pdftotext", failure_reason=failure)
 
 
+def render_for_ocr(
+    vault_pdf: Path,
+    *,
+    dpi: int = 200,
+    run=subprocess.run,
+) -> tuple[Path, ...]:
+    resolution = resolve_source(vault_pdf)
+    stamp = source_stamp(vault_pdf, resolution.path) or str(resolution.path)
+    destination = cache_dir() / "ocr" / sha1(stamp)
+    destination.mkdir(parents=True, exist_ok=True)
+
+    def rendered_pages() -> tuple[Path, ...]:
+        return tuple(
+            sorted(
+                destination.glob("page-*.png"),
+                key=lambda path: int(path.stem.rsplit("-", 1)[1]),
+            )
+        )
+
+    pages = rendered_pages()
+    if pages:
+        return pages
+
+    extraction = extract(vault_pdf, resolution)
+    if extraction.status is not SourceStatus.NO_TEXT_LAYER:
+        raise ValueError("OCR rendering requires no_text_layer source, got %s" % extraction.status.value)
+
+    prefix = destination / "page"
+    try:
+        result = run(
+            ["pdftoppm", "-png", "-r", str(dpi), str(resolution.path), str(prefix)],
+            capture_output=True,
+            text=True,
+            timeout=180,
+        )
+    except FileNotFoundError as error:
+        raise RuntimeError("pdftoppm executable not found") from error
+    if result.returncode != 0:
+        raise RuntimeError(result.stderr.strip() or "pdftoppm exited %d" % result.returncode)
+    pages = rendered_pages()
+    if not pages:
+        raise RuntimeError("pdftoppm produced no page images")
+    return pages
+
+
 def build_manifest_record(
     source: Path,
     resolution: Resolution,
@@ -460,6 +506,19 @@ def cmd_pages(target: str) -> None:
         print()
 
 
+def cmd_ocr_pages(target: str, dpi: int) -> None:
+    path = Path(target)
+    if not path.is_absolute():
+        path = VAULT / target
+    pages = render_for_ocr(path, dpi=dpi)
+    result = {
+        "source": rel(path),
+        "dpi": dpi,
+        "page_images": [str(page) for page in pages],
+    }
+    print(json.dumps(result, ensure_ascii=False, sort_keys=True))
+
+
 def cmd_doctor(manifest_path: Path | None = None) -> int:
     manifest_path = manifest_path or (cache_dir() / "manifest.jsonl")
     if not manifest_path.exists():
@@ -538,6 +597,11 @@ def main() -> None:
         cmd_resolve(args[1])
     elif command == "pages" and len(args) == 2:
         cmd_pages(args[1])
+    elif command == "ocr-pages" and len(args) >= 2:
+        dpi = 200
+        if "--dpi" in args:
+            dpi = int(args[args.index("--dpi") + 1])
+        cmd_ocr_pages(args[1], dpi)
     elif command == "doctor":
         manifest = None
         if "--manifest" in args:
