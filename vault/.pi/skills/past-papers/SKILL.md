@@ -21,6 +21,13 @@ Internal references `crosswalk.md`, `classify.md`, `paper.md`, `mock.md`,
 `predict.md`, `paper-review.md`, and `postmortem.md` run through `/exam`; they are
 not slash commands.
 
+## Lookup
+
+```bash
+python .pi/skills/past-papers/lookup.py "LEGACY102"
+python .pi/skills/past-papers/lookup.py "Foundations of Logic"
+```
+
 ## Answer scripts
 
 For a full scanned paper, write one Markdown note at:
@@ -40,7 +47,3 @@ inventing it.
 Write one note per paper. Keep rendered images and extracted text under
 `.pi/cache/pdf-index/`, never beside source PDFs.
 
-```bash
-python .pi/skills/past-papers/lookup.py "LEGACY102"
-python .pi/skills/past-papers/lookup.py "Foundations of Logic"
-```

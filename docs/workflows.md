@@ -42,7 +42,7 @@ When a paper reports `no_text_layer`, run:
 
 ```bash
 python .pi/skills/pdf-search/index.py ocr-pages \
-  "Papers & Reviews/Programme/Y01_S01/2025/COURSE101.pdf" --dpi 180
+  "Papers & Reviews/Programme/Y01_S01/2025/COURSE102.pdf" --dpi 180
 ```
 
 The command resolves a PDF++ shortcut and renders the real target. Read every

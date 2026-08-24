@@ -299,24 +299,46 @@ def render_for_ocr(
 ) -> tuple[Path, ...]:
     resolution = resolve_source(vault_pdf)
     stamp = source_stamp(vault_pdf, resolution.path) or str(resolution.path)
-    destination = cache_dir() / "ocr" / sha1("%s|dpi=%d" % (stamp, dpi))
-    destination.mkdir(parents=True, exist_ok=True)
+    stamp_hash = sha1(stamp)
+    bucket = cache_dir() / "ocr" / sha1(rel(vault_pdf))
+    bucket.mkdir(parents=True, exist_ok=True)
+    destination = bucket / ("%s-dpi%d" % (stamp_hash, dpi))
+    destination.mkdir(exist_ok=True)
+    complete = destination / ".render-complete"
 
-    def rendered_pages() -> tuple[Path, ...]:
+    def rendered_pages(path: Path = destination) -> tuple[Path, ...]:
         return tuple(
             sorted(
-                destination.glob("page-*.png"),
-                key=lambda path: int(path.stem.rsplit("-", 1)[1]),
+                path.glob("page-*.png"),
+                key=lambda page: int(page.stem.rsplit("-", 1)[1]),
             )
         )
 
+    def clear_render(path: Path) -> None:
+        for page in path.glob("page-*.png"):
+            page.unlink()
+        (path / ".render-complete").unlink(missing_ok=True)
+
+    for stale in bucket.iterdir():
+        if stale.is_dir() and not stale.name.startswith(stamp_hash + "-dpi"):
+            clear_render(stale)
+            try:
+                stale.rmdir()
+            except OSError:
+                pass
+
     pages = rendered_pages()
-    if pages:
+    if pages and complete.is_file():
         return pages
+    clear_render(destination)
 
     extraction = extract(vault_pdf, resolution)
     if extraction.status is not SourceStatus.NO_TEXT_LAYER:
-        raise ValueError("OCR rendering requires no_text_layer source, got %s" % extraction.status.value)
+        reason = ": %s" % extraction.failure_reason if extraction.failure_reason else ""
+        raise ValueError(
+            "OCR rendering requires no_text_layer source, got %s%s"
+            % (extraction.status.value, reason)
+        )
 
     prefix = destination / "page"
     try:
@@ -327,12 +349,19 @@ def render_for_ocr(
             timeout=180,
         )
     except FileNotFoundError as error:
+        clear_render(destination)
         raise RuntimeError("pdftoppm executable not found") from error
+    except subprocess.TimeoutExpired as error:
+        clear_render(destination)
+        raise RuntimeError("pdftoppm timed out") from error
     if result.returncode != 0:
+        clear_render(destination)
         raise RuntimeError(result.stderr.strip() or "pdftoppm exited %d" % result.returncode)
     pages = rendered_pages()
     if not pages:
+        clear_render(destination)
         raise RuntimeError("pdftoppm produced no page images")
+    complete.touch()
     return pages
 
 
@@ -599,9 +628,18 @@ def main() -> None:
         cmd_pages(args[1])
     elif command == "ocr-pages" and len(args) >= 2:
         dpi = 200
-        if "--dpi" in args:
-            dpi = int(args[args.index("--dpi") + 1])
-        cmd_ocr_pages(args[1], dpi)
+        rest = args[1:]
+        if "--dpi" in rest:
+            position = rest.index("--dpi")
+            if position + 1 >= len(rest):
+                print(__doc__)
+                raise SystemExit(2)
+            dpi = int(rest[position + 1])
+            rest = rest[:position] + rest[position + 2 :]
+        if len(rest) != 1:
+            print(__doc__)
+            raise SystemExit(2)
+        cmd_ocr_pages(rest[0], dpi)
     elif command == "doctor":
         manifest = None
         if "--manifest" in args:

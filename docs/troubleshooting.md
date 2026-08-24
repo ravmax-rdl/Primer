@@ -44,7 +44,8 @@ and the filename equals the Base's join key.
 
 Install Poppler for the current platform and confirm both executables are on
 `PATH`. `pdftotext` extracts existing text; `pdftoppm` renders scan-only sources
-for vision/OCR. A missing backend is a runtime failure, not `no_text_layer`.
+for vision/OCR. A missing `pdftotext` records `failed`, never `no_text_layer`; a
+missing `pdftoppm` fails rendering without changing the manifest.
 
 ## Release verifier fails
 

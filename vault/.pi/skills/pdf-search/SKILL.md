@@ -14,7 +14,7 @@ python .pi/skills/pdf-search/index.py index --root "Courses"
 python .pi/skills/pdf-search/index.py search "query" --path "Course"
 python .pi/skills/pdf-search/index.py resolve "path/to/source.pdf"
 python .pi/skills/pdf-search/index.py pages "path/to/source.pdf"
-python .pi/skills/pdf-search/index.py ocr-pages "Papers & Reviews/Programme/Y01_S01/2025/COURSE101.pdf" --dpi 180
+python .pi/skills/pdf-search/index.py ocr-pages "Papers & Reviews/Programme/Y01_S01/2025/COURSE102.pdf" --dpi 180
 python .pi/skills/pdf-search/index.py doctor
 ```
 
@@ -42,8 +42,8 @@ JSON containing ordered page-image paths for the vision/OCR pass.
 
 Read every returned image in order. Never pass the small shortcut file to an
 OCR backend, never skip unreadable pages silently, and never route any state
-other than `no_text_layer` into OCR. Pages are cached by source stamp; `--dpi`
-defaults to 200. Rendering does not rewrite the PDF or manifest.
+other than `no_text_layer` into OCR. Pages are cached per source stamp and DPI;
+`--dpi` defaults to 200. Rendering does not rewrite the PDF or manifest.
 
 `pdftoppm executable not found` means Poppler is unavailable. Install Poppler
 or repair `PATH`; do not relabel the source to hide the failure.
