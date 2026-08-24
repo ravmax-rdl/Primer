@@ -136,6 +136,21 @@ class PdfStatusTests(unittest.TestCase):
         self.assertEqual(first, second)
         self.assertEqual(calls, 1)
 
+    def test_render_for_ocr_caches_each_dpi_separately(self) -> None:
+        calls: list[str] = []
+
+        def fake_run(command: list[str], **_kwargs: object) -> subprocess.CompletedProcess[str]:
+            calls.append(command[3])
+            Path(command[-1] + "-1.png").write_bytes(b"page")
+            return subprocess.CompletedProcess(command, 0, "", "")
+
+        with ocr_fixture() as (_root, _real_pdf, shortcut):
+            first = index.render_for_ocr(shortcut, dpi=180, run=fake_run)
+            second = index.render_for_ocr(shortcut, dpi=300, run=fake_run)
+
+        self.assertNotEqual(first, second)
+        self.assertEqual(calls, ["180", "300"])
+
     def test_render_for_ocr_reports_renderer_failure(self) -> None:
         def failed_run(command: list[str], **_kwargs: object) -> subprocess.CompletedProcess[str]:
             return subprocess.CompletedProcess(command, 2, "", "renderer failed")

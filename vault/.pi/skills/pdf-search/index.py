@@ -299,7 +299,7 @@ def render_for_ocr(
 ) -> tuple[Path, ...]:
     resolution = resolve_source(vault_pdf)
     stamp = source_stamp(vault_pdf, resolution.path) or str(resolution.path)
-    destination = cache_dir() / "ocr" / sha1(stamp)
+    destination = cache_dir() / "ocr" / sha1("%s|dpi=%d" % (stamp, dpi))
     destination.mkdir(parents=True, exist_ok=True)
 
     def rendered_pages() -> tuple[Path, ...]:
