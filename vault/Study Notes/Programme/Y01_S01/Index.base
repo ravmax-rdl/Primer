@@ -5,7 +5,7 @@ model:
 pluginVersion: 1.0.0
 filters:
   and:
-    - file.path.startsWith("Study Notes/Programme/TERM_01")
+    - file.path.startsWith("Study Notes/Programme/Y01_S01")
     - file.ext == "canvas"
 views:
   - type: cards

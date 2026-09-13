@@ -4,7 +4,7 @@ argument-hint: "<course> [target-note]"
 ---
 Load the `vault-syntax` skill and the `teach` skill, then tutor me on **$1** using the probe → plan → teach → lock-in-quiz protocol.
 
-Target note: ${2:-today's `Study Notes/Programme/TERM_01/W##/D##/$1.md`}. If the week/day is ambiguous, ask me which before writing.
+Target note: ${2:-today's `Study Notes/Programme/Y01_S01/W##/D##/$1.md`}. If the week/day is ambiguous, ask me which before writing.
 
 Rules:
 - Read `.pi/LEARNER.md` first.

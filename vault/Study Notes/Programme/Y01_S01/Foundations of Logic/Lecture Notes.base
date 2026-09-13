@@ -1,8 +1,8 @@
 filters:
   and:
-    - file.inFolder("Study Notes/Programme/TERM_01")
+    - file.inFolder("Study Notes/Programme/Y01_S01")
     - 'file.name == "Foundations of Logic"'
-    - 'file.path != "Study Notes/Programme/TERM_01/Foundations of Logic/Foundations of Logic.md"'
+    - 'file.path != "Study Notes/Programme/Y01_S01/Foundations of Logic/Foundations of Logic.md"'
 properties:
   note.date:
     displayName: Date

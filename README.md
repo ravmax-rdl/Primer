@@ -25,9 +25,9 @@
 The included `Foundations of Logic` note demonstrates the complete loop without redistributing lecture material or examination questions:
 
 ```text
-/study COURSE102 20 "Study Notes/Programme/TERM_01/W01/D01/Foundations of Logic.md"
+/study COURSE102 20 "Study Notes/Programme/Y01_S01/W01/D01/Foundations of Logic.md"
       ↓
-/exam COURSE102 LEGACY102 "Study Notes/Programme/TERM_01/W01/D01/Foundations of Logic.md"
+/exam COURSE102 LEGACY102 "Study Notes/Programme/Y01_S01/W01/D01/Foundations of Logic.md"
       ↓
 /research "an unresolved claim" "Research/Claim matrix.md"
 ```

@@ -15,7 +15,7 @@ interval: 6
 ease: 2.5
 reps: 3
 lapses: 1
-source: "[[Study Notes/Programme/TERM_01/W01/D01/Foundations of Logic]]"
+source: "[[Study Notes/Programme/Y01_S01/W01/D01/Foundations of Logic]]"
 ```
 
 Run from the vault root:

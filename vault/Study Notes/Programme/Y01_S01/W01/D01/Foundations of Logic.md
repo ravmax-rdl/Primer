@@ -2,7 +2,7 @@
 type: lecture
 course: Foundations of Logic
 code: COURSE102
-semester: TERM_01
+semester: Y01_S01
 week: W01
 day: D01
 date: 2026-08-19

@@ -77,7 +77,7 @@ WORKFLOW_RUNTIME = {
     "vault/.pi/skills/academic-workflow/learning_state.py",
     "vault/.pi/skills/pdf-search/index.py",
 }
-PRIVATE_TEMPLATE_VALUE = re.compile(r"\b(?:Ravmax|UCSC|S01_2026|Discrete Mathematics)\b", re.IGNORECASE)
+PRIVATE_TEMPLATE_VALUE = re.compile(r"\b(?:Ravmax|UCSC|BSc|Discrete Mathematics)\b", re.IGNORECASE)
 REMOVED_COMMAND = re.compile(
     r"(?<![\w.-])/(?:lecture-video|lecture|probe|teach|classify|overview|mock|"
     r"postmortem|weakspots|review|cards|cram|cite|gap|exercises|feynman|paper|"

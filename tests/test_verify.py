@@ -157,7 +157,7 @@ class VerifyRepositoryTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             self.make_repository(root)
-            (root / "vault/START HERE.md").write_text("UCSC S01_2026 Discrete Mathematics\n", encoding="utf-8")
+            (root / "vault/START HERE.md").write_text("UCSC BSc Discrete Mathematics\n", encoding="utf-8")
             errors = verify_repository(root)
             self.assertTrue(any(error.startswith("Private template value:") for error in errors))
 

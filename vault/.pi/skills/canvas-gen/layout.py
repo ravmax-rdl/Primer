@@ -4,14 +4,14 @@ supplies x/y. Never let the LLM invent coordinates.
 
 Usage:
   python3 layout.py graph.json > placed.json
-  python3 layout.py graph.json --write "Study Notes/Programme/TERM_01/Foundations of Logic/Overview.canvas"
+  python3 layout.py graph.json --write "Study Notes/Programme/Y01_S01/Foundations of Logic/Overview.canvas"
   python3 layout.py graph.json --merge existing.canvas --write out.canvas
 
 graph.json:
 {
   "nodes": [
     {"id": "sets", "label": "Sets", "group": "Foundations",
-     "file": "Study Notes/Programme/TERM_01/W04/D02/Foundations of Logic.md",
+     "file": "Study Notes/Programme/Y01_S01/W04/D02/Foundations of Logic.md",
      "deps": [], "color": "#ee9b00", "kind": "file"}
   ],
   "edges": [{"from": "sets", "to": "relations", "label": "needed for"}]

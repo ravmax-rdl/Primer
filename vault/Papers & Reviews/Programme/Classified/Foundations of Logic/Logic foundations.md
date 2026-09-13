@@ -24,4 +24,4 @@ tags:
 
 ## Evidence rule
 
-Grade from the definitions in [[Study Notes/Programme/TERM_01/W01/D01/Foundations of Logic]]. Do not describe the result as an official Example University mark.
+Grade from the definitions in [[Study Notes/Programme/Y01_S01/W01/D01/Foundations of Logic]]. Do not describe the result as an official Example University mark.

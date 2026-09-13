@@ -4,14 +4,14 @@ This vault contains fictional data for testing Primer.
 
 ## Verify the demo
 
-1. Open [[Study Notes/Programme/TERM_01/W01/D01/Foundations of Logic]].
-2. Open [[Study Notes/Programme/TERM_01/Foundations of Logic/Lecture Notes.base]]
+1. Open [[Study Notes/Programme/Y01_S01/W01/D01/Foundations of Logic]].
+2. Open [[Study Notes/Programme/Y01_S01/Foundations of Logic/Lecture Notes.base]]
    and confirm the day note appears.
 3. Run `/doctor` and read the source-state result without repairing anything.
 4. Run:
 
 ```text
-/study COURSE102 20 "Study Notes/Programme/TERM_01/W01/D01/Foundations of Logic.md"
+/study COURSE102 20 "Study Notes/Programme/Y01_S01/W01/D01/Foundations of Logic.md"
 ```
 
 5. Confirm the session appends validated evidence only to that note.

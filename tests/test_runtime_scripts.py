@@ -83,9 +83,9 @@ class RuntimeScriptTests(unittest.TestCase):
 
 class DemoVaultTests(unittest.TestCase):
     def test_demo_course_and_cards_form_a_complete_learning_path(self) -> None:
-        course_index = VAULT / "Study Notes/Programme/TERM_01/Foundations of Logic/Foundations of Logic.md"
-        lecture_base = VAULT / "Study Notes/Programme/TERM_01/Foundations of Logic/Lecture Notes.base"
-        day_note = VAULT / "Study Notes/Programme/TERM_01/W01/D01/Foundations of Logic.md"
+        course_index = VAULT / "Study Notes/Programme/Y01_S01/Foundations of Logic/Foundations of Logic.md"
+        lecture_base = VAULT / "Study Notes/Programme/Y01_S01/Foundations of Logic/Lecture Notes.base"
+        day_note = VAULT / "Study Notes/Programme/Y01_S01/W01/D01/Foundations of Logic.md"
         cards = (
             VAULT / "Study Notes/Review/Foundations of Logic/Implication.md",
             VAULT / "Study Notes/Review/Foundations of Logic/Contrapositive.md",
@@ -105,7 +105,7 @@ class DemoVaultTests(unittest.TestCase):
             self.assertRegex(text, r"ease: \d+(?:\.\d+)?")
             self.assertRegex(text, r"reps: \d+")
             self.assertRegex(text, r"lapses: \d+")
-            self.assertIn("[[Study Notes/Programme/TERM_01/W01/D01/Foundations of Logic]]", text)
+            self.assertIn("[[Study Notes/Programme/Y01_S01/W01/D01/Foundations of Logic]]", text)
 
         day_text = day_note.read_text(encoding="utf-8")
         self.assertIn("## Understanding map", day_text)

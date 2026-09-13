@@ -2,10 +2,12 @@
 
 ## Course and term paths
 
-The distribution uses `Study Notes/Programme/TERM_01/` and fictional course IDs.
-Replace them before live use:
+The distribution uses `Study Notes/Programme/Y01_S01/` and fictional course IDs.
+Term folders follow `Y##_S##` — academic year, then term within that year, so a
+second-year first term is `Y02_S01`. Replace them before live use:
 
-1. Choose one canonical term path.
+1. Choose one canonical term path. Keep the `Y##_S##` shape if you want later
+   terms to sort correctly and stay distinguishable in Base filters.
 2. Rename course folders and their course-index notes together.
 3. Update each `Lecture Notes.base` filename filter.
 4. Replace `Papers & Reviews/Programme/crosswalk.json` from official programme

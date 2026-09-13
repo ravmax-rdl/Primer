@@ -6,7 +6,7 @@ interval: 0
 ease: 2.5
 reps: 0
 lapses: 0
-source: "[[Study Notes/Programme/TERM_01/W01/D01/Foundations of Logic]]"
+source: "[[Study Notes/Programme/Y01_S01/W01/D01/Foundations of Logic]]"
 tags:
   - study/review
   - primer/demo

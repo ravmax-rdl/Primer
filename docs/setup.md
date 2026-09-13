@@ -30,7 +30,7 @@ you intend to use, then rerun `/doctor`.
 Use the fictional `Foundations of Logic` note or a copied course fixture:
 
 ```text
-/study COURSE102 20 "Study Notes/Programme/TERM_01/W01/D01/Foundations of Logic.md"
+/study COURSE102 20 "Study Notes/Programme/Y01_S01/W01/D01/Foundations of Logic.md"
 ```
 
 Confirm that the session writes only the selected note and appends a valid

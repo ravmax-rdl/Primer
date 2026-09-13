@@ -14,6 +14,10 @@ Primer follows semantic versioning for published releases.
   taxonomy, and deterministic postmortem card actions.
 - Moved 25 specialist workflows into internal academic-workflow references.
 - Genericized the term, course, crosswalk, learner, and source fixtures.
+- Renamed the term fixture tree `TERM_01` to `Y01_S01`, matching the
+  `Y##_S##` convention already used by `Papers & Reviews/Programme/`.
+- Swapped the dead `S01_2026` private-value canary for `BSc`, which is the
+  token that now distinguishes an upstream path from a distribution path.
 - Extended tests and the release verifier for workflow completeness, private
   template values, and stale callable commands.
 

@@ -2,7 +2,7 @@
 description: Build a course concept Canvas with prerequisite edges
 argument-hint: "<course> [--exam]"
 ---
-Load `canvas-gen` and `vault-syntax`; load `past-papers` when `$1` includes `--exam`. Build `Study Notes/Programme/TERM_01/<Course>/Overview.canvas`.
+Load `canvas-gen` and `vault-syntax`; load `past-papers` when `$1` includes `--exam`. Build `Study Notes/Programme/Y01_S01/<Course>/Overview.canvas`.
 
 1. Walk matching `W##/D##/<Course>.md` notes and cluster their concepts.
 2. Add prerequisite edges. Represent a syllabus topic with no note as `kind: gap`.

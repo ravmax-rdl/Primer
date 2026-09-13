@@ -10,7 +10,7 @@ instructions, not slash commands.
 
 - Edit one selected target note per turn.
 - Prefer an existing note over a near-copy.
-- Term fixtures live under `Study Notes/Programme/TERM_01/`.
+- Term fixtures live under `Study Notes/Programme/Y01_S01/`.
 - A day-note filename must equal the course name used by its
   `Lecture Notes.base` filter.
 - Put attachments in `Bin/` and cards under `Study Notes/Review/<Course>/`.

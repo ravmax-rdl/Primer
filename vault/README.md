@@ -14,7 +14,7 @@ This is the portable Obsidian fixture installed with Primer.
 
 ## Fixture paths
 
-- Term: `Study Notes/Programme/TERM_01/`
+- Term: `Study Notes/Programme/Y01_S01/`
 - Demo course: `Foundations of Logic`
 - Demo day note: `W01/D01/Foundations of Logic.md`
 - Cards: `Study Notes/Review/Foundations of Logic/`
