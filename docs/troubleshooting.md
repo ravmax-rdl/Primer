@@ -6,6 +6,13 @@ Install or enable `pi-ask-user`, restart Pi, and confirm the `ask_user` tool is
 available. `pi-quiz` is user-invoked revision; it does not replace the
 model-callable tool used during a study turn.
 
+## A prompt shows raw LaTeX or reveals the answer
+
+The `ask_user` surface renders Markdown, not LaTeX, and it prints `context`
+above the question. Send math as Unicode or inside an inline code span, keep
+multi-line derivations in the note, and give a scored question no synthesized
+`context`. See the interactive-prompt rules in `vault/.pi/APPEND_SYSTEM.md`.
+
 ## `/doctor` reports `missing_target`
 
 Restore the file or update the shortcut/path mapping. Do not queue OCR; no

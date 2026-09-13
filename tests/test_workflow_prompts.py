@@ -8,6 +8,7 @@ from pathlib import Path
 ROOT = Path(__file__).parents[1]
 VAULT = ROOT / "vault"
 PROMPTS = VAULT / ".pi" / "prompts"
+APPEND_SYSTEM = VAULT / ".pi" / "APPEND_SYSTEM.md"
 REFERENCES = VAULT / ".pi" / "skills" / "academic-workflow" / "references"
 VISIBLE = {"study.md", "capture.md", "research.md", "exam.md", "doctor.md"}
 SPECIALIST = {
@@ -69,6 +70,13 @@ class WorkflowPromptTests(unittest.TestCase):
         self.assertTrue(
             (VAULT / "Papers & Reviews" / "Programme" / "Y01_S01" / "Answer Scripts").is_dir()
         )
+
+    def test_interactive_prompt_rules_survive_rewrites(self) -> None:
+        text = APPEND_SYSTEM.read_text(encoding="utf-8")
+        lowered = text.lower()
+        self.assertIn("ask_user", lowered)
+        self.assertIn("renders markdown, not latex", lowered)
+        self.assertIn("scored question carries no synthesized `context`", lowered)
 
     def test_visible_prompts_do_not_call_removed_commands(self) -> None:
         stems = (re.escape(Path(name).stem) for name in SPECIALIST)

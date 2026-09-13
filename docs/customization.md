@@ -23,6 +23,13 @@ Keep the record schemas and eight error labels stable. Add domain-specific
 concept IDs and source conventions, not new free-form mastery fields. If you add
 a record field, update `learning_state.py`, tests, prompts, and docs together.
 
+## Interactive prompts
+
+Keep the terminal-rendering and answer-leak rules in `.pi/APPEND_SYSTEM.md` if
+you rewrite that file. They describe the `ask_user` surface itself, not this
+distribution's course conventions, so removing them reintroduces mangled math
+and questions that print their own answers.
+
 ## Workflow prompts
 
 Keep five visible prompts. Customize internal references under

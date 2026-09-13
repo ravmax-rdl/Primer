@@ -4,6 +4,18 @@ Primer follows semantic versioning for published releases.
 
 ## Unreleased
 
+## 0.2.0 - 2026-09-13
+
+- Added interactive-prompt rules: `ask_user` renders Markdown rather than LaTeX,
+  so math reaches a prompt as Unicode or inline code, and multi-line
+  derivations, matrices, and diagrams stay in the previewed note.
+- Stopped scored questions from carrying synthesized `context`. The field prints
+  above the question, so a source passage, a definition under test, reasoning,
+  or a recommendation handed the learner the answer. Summarized context is now
+  reserved for decision gates.
+- Documented both failures in the troubleshooting, workflow, and customization
+  guides, and covered them with a test so an `APPEND_SYSTEM.md` rewrite cannot
+  drop them silently.
 - Replaced specialist slash-command clutter with `/study`, `/capture`,
   `/research`, `/exam`, and `/doctor`.
 - Added explicit PDF source states, provenance fields, canonical manifest paths,

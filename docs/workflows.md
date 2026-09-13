@@ -14,6 +14,11 @@ decision, and appends validated evidence with one next action.
 Stable preferences remain in `.pi/LEARNER.md`. Dynamic state uses
 `academic-evidence` fenced JSON records in the target note.
 
+Probe and practice questions arrive through `ask_user`, which renders Markdown
+rather than LaTeX and prints `context` above the question. Math reaches the
+prompt as Unicode or inline code, and a scored question carries no synthesized
+context.
+
 ## Exam
 
 ```text

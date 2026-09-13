@@ -13,6 +13,21 @@ are internal references.
 - Keep stable preferences in `.pi/LEARNER.md`; dynamic state belongs in validated
   `academic-evidence` records in the target note.
 
+## Interactive prompts
+
+- An `ask_user` prompt is a terminal surface. It renders Markdown, not LaTeX,
+  and `_` or `*` inside `$...$` is consumed as emphasis. Write math in the
+  question and in the options as Unicode — `x²`, `aₙ`, `∑`, `∫`, `√`, `≤`,
+  `≠`, `∈`, `→`, `θ`, `⌈x⌉`, `¬`, `∧`, `∀` — or wrap raw LaTeX in an inline
+  code span so it survives verbatim. Never send bare `$…$` or `$$…$$`.
+- Multi-line derivations, matrices, and diagrams belong in the note and are
+  previewed before writing. Reference them from the prompt; do not inline them.
+- A scored question carries no synthesized `context`. Omit the field, or limit
+  it to neutral scaffolding such as the target note, the question number, or the
+  grading scale. Source passages, the definition under test, reasoning, and
+  recommendations print above the question and hand over the answer. Summarized
+  context belongs to decision gates, never to assessment.
+
 ## Safety and integrity
 
 1. Never read or expose credential-like files.
